@@ -1,52 +1,25 @@
-const http = require("http");
+const dotenv = require("dotenv");
+const morgan = require("morgan");
+const express = require("express");
 
-const todos = [
-  { id: 1, text: "Todo One" },
-  { id: 2, text: "Todo Two" },
-  { id: 3, text: "Todo Three" },
-];
+const accounts = require("./routes/accounts");
 
-const server = http.createServer((req, res) => {
-  const { method, url } = req;
-  let body = [];
+// Load env vars
+dotenv.config({ path: "./config/config.env" });
 
-  req
-    .on("data", (chunk) => {
-      body.push(chunk);
-    })
-    .on("end", () => {
-      body = Buffer.concat(body).toString();
+const app = express();
 
-      let status = 404;
-      const response = {
-        success: false,
-        data: null,
-      };
+// Dev logging middleware
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan('dev'));
+}
 
-      if (method === "GET" && url === "/todos") {
-        status = 200;
-        response.success = true;
-        response.data = todos;
-      } else if (method === "POST" && url === "/todos") {
-        const { id, text } = JSON.parse(body);
+// Mount routes
+app.use("/api/v1/accounts", accounts);
 
-        if (!id || !text) {
-          status = 400;
-        } else {
-          todos.push({ id, text });
-          status = 201;
-          response.success = true;
-          response.data = todos;
-        }
-      }
-      res.writeHead(status, {
-        "Content-Type": "application/json",
-        "X-Powered-By": "Node.js",
-      });
-      res.end(JSON.stringify(response));
-    });
-});
+const PORT = process.env.PORT || 5000;
 
-const PORT = 5000;
-
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(
+  PORT,
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
+);
